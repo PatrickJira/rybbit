@@ -21,6 +21,7 @@ import { Button } from "../../../../components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationInvitations } from "../../../../api/admin/organizations";
+import { IS_CLOUD } from "@/lib/const";
 
 interface InvitationsProps {
   organizationId: string;
@@ -29,6 +30,9 @@ interface InvitationsProps {
 
 export function Invitations({ organizationId, isOwner }: InvitationsProps) {
   const [loadingInvitationId, setLoadingInvitationId] = useState<string | null>(
+    null
+  );
+  const [copyingInvitationId, setCopyingInvitationId] = useState<string | null>(
     null
   );
 
@@ -68,6 +72,28 @@ export function Invitations({ organizationId, isOwner }: InvitationsProps) {
       toast.error(error.message || "Failed to resend invitation");
     } finally {
       setLoadingInvitationId(null);
+    }
+  };
+
+  const handleCopyInvitationLink = async (invitation: any) => {
+    const invitationLink = `${window.location.origin}/join?invitationId=${
+      invitation.id
+    }&organization=${encodeURIComponent(
+      invitation.organizationName
+    )}&inviterEmail=${encodeURIComponent(
+      `${invitation.organizationName}'s Admin`
+    )}`;
+    try {
+      await navigator.clipboard.writeText(invitationLink);
+      toast.success("Invitation link copied to clipboard");
+      setCopyingInvitationId(invitation.id);
+      setTimeout(() => {
+        setCopyingInvitationId(null);
+      }, 1000);
+    } catch (error) {
+      toast.error("Failed to copy invitation link");
+      console.error("Failed to copy invitation link:", error);
+      console.log("Invitation link:", invitationLink);
     }
   };
 
@@ -147,20 +173,38 @@ export function Invitations({ organizationId, isOwner }: InvitationsProps) {
                         ).toLocaleString(DateTime.DATE_SHORT)}
                       </TableCell>
                       {isOwner && (
-                        <TableCell className="text-right">
+                        <TableCell className="text-right space-x-2">
                           {invitation.status === "pending" && (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              disabled={loadingInvitationId === invitation.id}
-                              onClick={() =>
-                                handleCancelInvitation(invitation.id)
-                              }
-                            >
-                              {loadingInvitationId === invitation.id
-                                ? "Processing..."
-                                : "Cancel"}
-                            </Button>
+                            <>
+                              {!IS_CLOUD && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  disabled={
+                                    copyingInvitationId === invitation.id
+                                  }
+                                  onClick={() =>
+                                    handleCopyInvitationLink(invitation)
+                                  }
+                                >
+                                  {copyingInvitationId === invitation.id
+                                    ? "Copied!"
+                                    : "Copy Link"}
+                                </Button>
+                              )}
+                              <Button
+                                variant="default"
+                                size="sm"
+                                disabled={loadingInvitationId === invitation.id}
+                                onClick={() =>
+                                  handleCancelInvitation(invitation.id)
+                                }
+                              >
+                                {loadingInvitationId === invitation.id
+                                  ? "Processing..."
+                                  : "Cancel"}
+                              </Button>
+                            </>
                           )}
                           {invitation.status === "canceled" && (
                             <Button
