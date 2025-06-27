@@ -24,6 +24,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Alert } from "../../../../components/ui/alert";
 import { authClient } from "../../../../lib/auth";
+import { IS_CLOUD } from "@/lib/const";
 
 interface InviteMemberDialogProps {
   organizationId: string;
@@ -55,8 +56,11 @@ export function InviteMemberDialog({
         organizationId,
         resend: true,
       });
-
-      toast.success(`Invitation sent to ${email}`);
+      if (IS_CLOUD) {
+        toast.success(`Invitation sent to ${email}`);
+      } else {
+        toast.success(`Please copy invitation link in invitation lists`);
+      }
       setOpen(false);
       onSuccess();
       setEmail("");
